@@ -1,6 +1,7 @@
 package com.example.autosms
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,10 +43,20 @@ class MainActivity : ComponentActivity() {
         setContent {
             AutoSMSTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    PermissionScreen(
-                        modifier = Modifier.padding(innerPadding),
-                        onRequestPermissions = { checkPermissions() }
-                    )
+                    Column(
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        PermissionScreen(
+                            modifier = Modifier.padding(bottom = 16.dp),
+                            onRequestPermissions = { checkPermissions() }
+                        )
+                        InputScreen(context = this@MainActivity)
+                    }
                 }
             }
         }
@@ -60,21 +72,64 @@ class MainActivity : ComponentActivity() {
             requestPermissionLauncher.launch(requiredPermissions)
         }
     }
+
+
 }
 
 @Composable
 fun PermissionScreen(modifier: Modifier = Modifier, onRequestPermissions: () -> Unit) {
     var permissionRequested by remember { mutableStateOf(false) }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Button(onClick = {
+    Button(
+        onClick = {
             permissionRequested = true
             onRequestPermissions()
-        }) {
-            Text(text = if (permissionRequested) "Revisar permisos" else "Solicitar permisos")
+        },
+        modifier = modifier
+    ) {
+        Text(text = if (permissionRequested) "Revisar permisos" else "Solicitar permisos")
+    }
+}
+
+
+// Función para guardar datos en SharedPreferences
+private fun saveData(context: Context, phoneNumber: String, message: String) {
+    val sharedPreferences = context.getSharedPreferences("AutoSMS", Context.MODE_PRIVATE)
+    val editor = sharedPreferences.edit()
+    editor.putString("phoneNumber", phoneNumber)
+    editor.putString("message", message)
+    editor.apply()
+}
+
+@Composable
+fun InputScreen(context: Context) {
+    var phoneNumber by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf("") }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        TextField(
+            value = phoneNumber,
+            onValueChange = { phoneNumber = it },
+            label = { Text("Número de teléfono") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        TextField(
+            value = message,
+            onValueChange = { message = it },
+            label = { Text("Mensaje") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Button(
+            onClick = {
+                // Guardar los datos en SharedPreferences
+                saveData(context, phoneNumber, message)
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Aceptar")
         }
     }
 }
@@ -84,5 +139,13 @@ fun PermissionScreen(modifier: Modifier = Modifier, onRequestPermissions: () -> 
 fun PermissionScreenPreview() {
     AutoSMSTheme {
         PermissionScreen(onRequestPermissions = {})
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun InputScreenPreview() {
+    AutoSMSTheme {
+        InputScreen(context = androidx.compose.ui.platform.LocalContext.current)
     }
 }
